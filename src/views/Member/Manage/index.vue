@@ -15,11 +15,12 @@
     <!-- 新增删除操作区域 -->
     <div class="create-container">
       <el-button type="primary" @click="$router.push({path:'/member/add',query:{type:'add'}})">添加会员</el-button>
-      <el-button>批量删除</el-button>
+      <el-button @click="selectDel">批量删除</el-button>
     </div>
     <!-- 表格区域 -->
     <div class="table">
-      <el-table style="width: 100%" :data="userList">
+      <el-table style="width: 100%" :data="userList" @selection-change="selectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column type="index" label="序号" :index="indexMethod" />
         <el-table-column label="会员名称" prop="name" />
         <el-table-column label="联系方式" prop="photo" />
@@ -43,27 +44,62 @@
         </el-table-column>
         <el-table-column label="操作" fixed="right" width="180">
           <template #default="scope">
-            <el-button size="mini" type="text">续费</el-button>
+            <el-button size="mini" type="text" @click="renewCards(scope.row)">续费</el-button>
             <el-button size="mini" type="text" @click="seeMember(scope.row.id)">查看</el-button>
             <el-button size="mini" type="text" @click="editMember(scope.row.id)">编辑</el-button>
-            <el-button size="mini" type="text">删除</el-button>
+            <el-button size="mini" type="text" @click="delMember(scope.row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </div>
+    <!-- 分页 -->
     <div class="page-container">
       <el-pagination layout="total, prev, pager, next" :total="total" :page-size="params.pageSize" @current-change="handleCurrentChange" />
     </div>
+    <!-- 续费弹出窗 -->
+    <el-dialog title="续费会员卡" :visible.sync="dialogFormVisible" width="30%" center>
+      <el-form ref="ruleForm" :model="ruleForm" status-icon :rules="rules" label-width="100px" class="demo-ruleForm">
+        <el-form-item label="续费时间" prop="timeDate">
+          <el-date-picker
+            v-model="ruleForm.timeDate"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="yyyy-MM-dd"
+          />
+        </el-form-item>
+        <el-form-item label="支付金额" prop="payNum">
+          <el-input v-model="ruleForm.payNum" />
+        </el-form-item>
+        <el-form-item label="支付方式" prop="paymentMethod">
+          <el-select v-model="ruleForm.paymentMethod">
+            <el-option v-for="item in payOptions" :key="item.value" :value="item.value" :label="item.label" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="submitRenew">提交</el-button>
+          <el-button @click="resetRenew">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getMemberListAPI } from '@/api/member'
+import { getMemberListAPI, delMemberAPI, renewMemberAPI } from '@/api/member'
 
 export default {
   name: 'Manage',
   data() {
     return {
+      // 续费 表单
+      ruleForm: {
+        timeDate: '',
+        payNum: '',
+        paymentMethod: ''
+      },
+      dialogFormVisible: false,
       options: [
         {
           value: null,
@@ -120,6 +156,29 @@ export default {
         halfYear: '半年卡',
         year: '年卡',
         permanent: '永久卡'
+      },
+      selectList: [],
+      payOptions: [
+        {
+          value: 'Alipay',
+          label: '支付宝'
+        },
+        {
+          value: 'WeChat',
+          label: '微信'
+        },
+        {
+          value: 'Cash',
+          label: '线下支付'
+        }
+      ],
+      rules: {
+        timeDate: [{ required: true, type: 'array', message: '请选择续费时间', trigger: 'change' }],
+        payNum: [
+          { required: true, type: 'string', message: '请填写支付金额', trigger: 'blur' },
+          { pattern: /^\d+(\.\d{1,2})?$/, message: '支付金额格式不对' }
+        ],
+        paymentMethod: [{ required: true, message: '请选择支付方式', trigger: 'change' }]
       }
     }
   },
@@ -127,6 +186,70 @@ export default {
     this.getMemberList()
   },
   methods: {
+    // 重置续费
+    resetRenew() {
+      this.ruleForm = { timeDate: '', payNum: '', paymentMethod: '' }
+      this.$refs.ruleForm.resetFields()
+    },
+    // 提交续费
+    submitRenew() {
+      this.$refs.ruleForm.validate(async valid => {
+        if (!valid) return
+        // 通过校验
+        const obj = {
+          ...this.ruleForm,
+          startTime: this.ruleForm.timeDate[0],
+          endTime: this.ruleForm.timeDate[1]
+        }
+        delete obj.timeDate
+        await renewMemberAPI(obj)
+        this.$message.success('续费成功.')
+        this.dialogFormVisible = false
+        this.getMemberList()
+      })
+    },
+    // 续费
+    renewCards(row) {
+      this.dialogFormVisible = true
+      this.ruleForm = {
+        id: row.id,
+        timeDate: [row.startTime, row.endTime],
+        payNum: row.payNum,
+        paymentMethod: row.paymentMethod
+      }
+    },
+    // 批量删除
+    selectDel() {
+      if (this.selection.length === 0) {
+        this.$message.error('请先选择需要删除的会员')
+        return
+      }
+      this.$confirm('确认删除所选会员吗?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        await delMemberAPI(this.selection)
+        this.$message.success('删除成功')
+        this.getMemberList()
+      })
+    },
+    // 选择
+    selectionChange(selection) {
+      this.selection = selection.map(obj => obj.id)
+    },
+    // 删除
+    async delMember(id) {
+      this.$confirm('确认删除所选会员吗?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        await delMemberAPI(id)
+        this.$message.success('删除成功')
+        this.getMemberList()
+      })
+    },
     // 编辑
     editMember(id) {
       this.$router.push({

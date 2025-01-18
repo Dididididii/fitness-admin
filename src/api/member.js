@@ -42,3 +42,24 @@ export const updtaMemberAPI = (data) => {
     data,
   });
 };
+
+/**
+ * 删除/批量删除会员
+ * @param {*} id array or number
+ * @returns
+ */
+export const delMemberAPI = (id) => {
+  return request({
+    url: "/member/del",
+    method: "delete",
+    data: { id },
+  });
+};
+
+export const renewMemberAPI = (data) => {
+  return request({
+    url: "/member/renew",
+    method: "put",
+    data,
+  });
+};
