@@ -14,7 +14,7 @@
     </div>
     <!-- 新增删除操作区域 -->
     <div class="create-container">
-      <el-button type="primary" @click="$router.push('/member/add')">添加会员</el-button>
+      <el-button type="primary" @click="$router.push({path:'/member/add',query:{type:'add'}})">添加会员</el-button>
       <el-button>批量删除</el-button>
     </div>
     <!-- 表格区域 -->
@@ -44,7 +44,7 @@
         <el-table-column label="操作" fixed="right" width="180">
           <template #default="scope">
             <el-button size="mini" type="text">续费</el-button>
-            <el-button size="mini" type="text">查看</el-button>
+            <el-button size="mini" type="text" @click="seeMember(scope.row.id)">查看</el-button>
             <el-button size="mini" type="text">编辑</el-button>
             <el-button size="mini" type="text">删除</el-button>
           </template>
@@ -127,6 +127,16 @@ export default {
     this.getMemberList()
   },
   methods: {
+    // 查看
+    seeMember(id) {
+      this.$router.push({
+        path: `/member/add`,
+        query: {
+          id,
+          type: 'see'
+        }
+      })
+    },
     // 查询
     searchMember() {
       this.params.page = 1

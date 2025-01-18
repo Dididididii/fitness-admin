@@ -20,3 +20,12 @@ export const addMemberAPI = (data) => {
     data,
   });
 };
+
+/**
+ * 获取会员详情
+ * @param {*} id  number
+ * @returns
+ */
+export const getMemberAPI = (id) => {
+  return request(`/member?id=${id}`);
+};
