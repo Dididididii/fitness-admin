@@ -1,5 +1,6 @@
 import Vue from "vue";
 import Router from "vue-router";
+import store from "@/store";
 
 Vue.use(Router);
 
@@ -105,6 +106,30 @@ const createRouter = () =>
   });
 
 const router = createRouter();
+
+// 设置全局前置守卫
+router.beforeEach((to, from, next) => {
+  // 可以在这里进行路由守卫的逻辑处理
+  // 例如：身份验证、权限校验、加载数据等
+  console.log(to, from);
+  if (to.path === "/login") {
+    if (store.state.user.token) {
+      next(from.path);
+    } else {
+      next();
+    }
+  } else if (to.path === "/404") {
+    next();
+  } else {
+    if (!store.state.user.token) {
+      next("/login");
+    } else {
+      next();
+    }
+  }
+  // 确保要调用next()来resolve这个钩子
+  next();
+});
 
 // 重置路由方法
 export function resetRouter() {
