@@ -1,6 +1,7 @@
 import axios from "axios";
 // 导入消息提示组件
 import { Message } from "element-ui";
+import { removeToken } from "./auth";
 
 const service = axios.create({
   baseURL: "http://127.0.0.1:8081",
@@ -29,10 +30,10 @@ service.interceptors.response.use(
     // 401token失效处理
     if (error.response.status === 401) {
       // 跳转到登录页
-      //   router.push("/login");
+      router.push("/login");
       // 清除token
-      //   store.commit('user/updateToken', '')
-      localStorage.removeItem("token");
+      store.commit("user/setToken", "");
+      removeToken();
       Message.warning("登录已过期,请重新登录.");
       return Promise.reject(error);
     }
