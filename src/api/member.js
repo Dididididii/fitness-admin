@@ -29,3 +29,16 @@ export const addMemberAPI = (data) => {
 export const getMemberAPI = (id) => {
   return request(`/member?id=${id}`);
 };
+
+/**
+ * 修改会员详情
+ * @param {*} data  obj
+ * @returns
+ */
+export const updtaMemberAPI = (data) => {
+  return request({
+    url: "/member/edit",
+    method: "put",
+    data,
+  });
+};

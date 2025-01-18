@@ -70,7 +70,7 @@
 </template>
 
 <script>
-import { addMemberAPI, getMemberAPI } from '@/api/member'
+import { addMemberAPI, getMemberAPI, updtaMemberAPI } from '@/api/member'
 
 export default {
   name: 'AddMember',
@@ -189,6 +189,8 @@ export default {
         ...res.data,
         timeDate: [res.data.startTime, res.data.endTime]
       }
+      //   delete this.addForm.startTime
+      //   delete this.addForm.endTime
     },
     submitForm() {
       this.$refs.addForm.validate(async valid => {
@@ -200,8 +202,14 @@ export default {
         data.endTime = this.addForm.timeDate[1]
         delete data.timeDate
 
-        await addMemberAPI(data)
-        this.$message.success('添加成功.')
+        if (this.$route.query.type === 'add') {
+          await addMemberAPI(data)
+          this.$message.success('添加成功.')
+        } else {
+          await updtaMemberAPI(data)
+          this.$message.success('修改成功.')
+        }
+
         this.$refs.addForm.resetFields()
         this.$router.back()
       })
