@@ -56,10 +56,23 @@ export const delMemberAPI = (id) => {
   });
 };
 
+/**
+ * 续费会员
+ * @param {*} data obj
+ * @returns
+ */
 export const renewMemberAPI = (data) => {
   return request({
     url: "/member/renew",
     method: "put",
     data,
+  });
+};
+
+// 获取所有会员列表
+export const getAllMembersList = () => {
+  return request({
+    url: "/member/all",
+    method: "get",
   });
 };

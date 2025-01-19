@@ -16,6 +16,7 @@
     <div class="create-container">
       <el-button type="primary" @click="$router.push({path:'/member/add',query:{type:'add'}})">添加会员</el-button>
       <el-button @click="selectDel">批量删除</el-button>
+      <el-button @click="exportToExcel">导出execl</el-button>
     </div>
     <!-- 表格区域 -->
     <div class="table">
@@ -87,7 +88,8 @@
 </template>
 
 <script>
-import { getMemberListAPI, delMemberAPI, renewMemberAPI } from '@/api/member'
+import { getMemberListAPI, delMemberAPI, renewMemberAPI, getAllMembersList } from '@/api/member'
+import { utils, writeFileXLSX } from 'xlsx'
 
 export default {
   name: 'Manage',
@@ -186,6 +188,44 @@ export default {
     this.getMemberList()
   },
   methods: {
+    // 导出execl
+    async exportToExcel() {
+      // 获取要导出的业务数据
+      const res = await getAllMembersList()
+      // 表头英文字段key
+      const tableHeaderKeys = ['name', 'photo', 'cards', 'payNum', 'paymentMethod', 'course', 'coach', 'timeDate']
+      // 表头中文字段value
+      const tableHeaderValues = ['会员名称', '联系号码', '会员卡', '支付金额(元)', '支付方式', '会员课', '专属私教', '有效日期']
+      // 以excel表格的顺序调整后端数据
+      const sheetData = res.data.map(item => {
+        const obj = {}
+        tableHeaderKeys.forEach(key => {
+          if (key === 'timeDate') {
+            item[key] = `${item.startTime}至${item.endTime}`
+            obj[key] = item[key]
+          }
+          if (key === 'cards') {
+            item[key] = this.cardsObj[item[key]]
+            obj[key] = item[key]
+          }
+          if (key === 'paymentMethod') {
+            item[key] = this.paymentObj[item[key]]
+            obj[key] = item[key]
+          }
+          obj[key] = item[key]
+        })
+        return obj
+      })
+      // 创建一个工作表
+      const worksheet = utils.json_to_sheet(sheetData)
+      // 创建一个新的工作簿
+      const workbook = utils.book_new()
+      // 把工作表添加到工作簿
+      utils.book_append_sheet(workbook, worksheet, 'Data')
+      // 改写表头
+      utils.sheet_add_aoa(worksheet, [tableHeaderValues], { origin: 'A1' })
+      writeFileXLSX(workbook, 'memberInfo.xlsx')
+    },
     // 重置续费
     resetRenew() {
       this.ruleForm = { timeDate: '', payNum: '', paymentMethod: '' }
