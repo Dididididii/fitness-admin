@@ -16,7 +16,7 @@
     <div class="create-container">
       <el-button type="primary" @click="$router.push({path:'/member/add',query:{type:'add'}})">添加会员</el-button>
       <el-button @click="selectDel">批量删除</el-button>
-      <el-button @click="exportToExcel">导出execl</el-button>
+      <el-button type="success" @click="exportToExcel">导出execl</el-button>
     </div>
     <!-- 表格区域 -->
     <div class="table">
