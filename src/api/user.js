@@ -13,3 +13,29 @@ export function loginAPI(data) {
     data,
   });
 }
+
+/**
+ * 重置密码
+ * @param {*} id number
+ * @returns
+ */
+export function resetPasswordAPI(id) {
+  return request({
+    url: "/reset",
+    method: "PUT",
+    data: { id },
+  });
+}
+
+/**
+ * 修改密码
+ * @param {*} data obj
+ * @returns
+ */
+export function changPasswordAPI(data) {
+  return request({
+    url: "/change",
+    method: "PUT",
+    data,
+  });
+}

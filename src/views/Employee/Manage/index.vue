@@ -23,6 +23,7 @@
         <el-table-column label="员工名称" prop="name" />
         <el-table-column label="联系方式" prop="photo" />
         <el-table-column label="身份证号码" prop="identificationCard" />
+        <el-table-column label="登录账号" prop="login" />
         <el-table-column label="工种" prop="employeeClass">
           <template #default="scope">{{ classList[scope.row.employeeClass] }}</template>
         </el-table-column>
@@ -33,6 +34,8 @@
           <template #default="scope">
             <el-button size="mini" type="text" @click="editEmployee(scope.row)">编辑</el-button>
             <el-button size="mini" type="text" @click="delEmployee(scope.row.id)">删除</el-button>
+            <el-button size="mini" type="text" @click="resetPassword(scope.row.id)">重置密码</el-button>
+            <el-button size="mini" type="text" @click="openChangePass(scope.row.id)">修改密码</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -40,7 +43,7 @@
     <div class="page-container">
       <el-pagination layout="total, prev, pager, next" :total="total" :page-size="params.pageSize" @current-change="currentChange" />
     </div>
-    <!-- 添加楼宇 -->
+    <!-- 添加员工 -->
     <el-dialog :title="addForm.id ? '编辑员工':'添加员工'" width="580px" :visible.sync="dialogVisible" @close="resetForm">
       <!-- 表单接口 -->
       <div class="form-container">
@@ -54,7 +57,12 @@
           <el-form-item label="身份证号码" prop="identificationCard">
             <el-input v-model="addForm.identificationCard" />
           </el-form-item>
-          <el-form-item label="员工分类" prop="employeeClass">
+          <el-form-item label="登录账号" prop="login">
+            <el-input v-model="addForm.login" />
+            <!-- <br /> -->
+          </el-form-item>
+          <span style="color:red;">* 登录密码默认为123456</span>
+          <el-form-item label="员工分类" prop="employeeClass" style="margin-top: 20px;">
             <el-select v-model="addForm.employeeClass">
               <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
@@ -75,15 +83,51 @@
         <el-button size="mini" type="primary" @click="submitForm">确 定</el-button>
       </template>
     </el-dialog>
+    <!-- 修改密码 -->
+    <el-dialog title="修改密码" :visible.sync="outerVisible" width="30%" center>
+      <el-form ref="changeForm" :model="ruleForm" status-icon :rules="rules" label-width="100px" class="demo-ruleForm">
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="ruleForm.password" type="password" autocomplete="off" show-password />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="checkPassword">
+          <el-input v-model="ruleForm.checkPassword" type="password" autocomplete="off" show-password />
+        </el-form-item>
+        <el-form-item>
+          <span>
+            <el-button @click="resetChangeForm">取 消</el-button>
+            <el-button type="primary" @click="submitChange">确 定</el-button>
+          </span>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
 <script>
+import { resetPasswordAPI, changPasswordAPI } from '@/api/user'
 import { getEmployeeListAPI, addEmployeeAPI, updateEmployeeAPI, delEmployeeAPI } from '@/api/employee'
 
 export default {
   data() {
     return {
+      ruleForm: {
+        id: '',
+        password: '',
+        checkPassword: ''
+      },
+      rules: {
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, max: 12, message: '长度在 6 到 12 个字符', trigger: 'blur' },
+          { validator: this.validatePass, trigger: 'blur' }
+        ],
+        checkPassword: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, max: 12, message: '长度在 6 到 12 个字符', trigger: 'blur' },
+          { validator: this.validatePass2, trigger: 'blur' }
+        ]
+      },
+      outerVisible: false,
       addForm: {
         name: '',
         photo: '',
@@ -91,7 +135,8 @@ export default {
         employeeClass: '',
         entryTime: '',
         endTime: '',
-        performance: ''
+        performance: '0',
+        login: ''
       },
       addFormRules: {
         name: [
@@ -104,7 +149,8 @@ export default {
         ],
         employeeClass: [{ required: true, message: '请选择员工分类', trigger: 'change' }],
         entryTime: [{ type: 'string', required: true, message: '请选择入职日期', trigger: 'change' }],
-        identificationCard: [{ required: true, message: '请输入身份证号', trigger: 'blur' }]
+        identificationCard: [{ required: true, message: '请输入身份证号', trigger: 'blur' }],
+        login: [{ required: true, message: '请输入登录账号', trigger: 'blur' }]
       },
       dialogVisible: false,
       options: [
@@ -150,6 +196,62 @@ export default {
     this.getEmployeeList()
   },
   methods: {
+    // 确认修改
+    submitChange() {
+      this.$refs.changeForm.validate(async valid => {
+        if (!valid) return
+        // 校验通过
+        const obj = this.ruleForm
+        delete obj.checkPassword
+        await changPasswordAPI(obj)
+        this.$message.success('修改成功.')
+        this.resetChangeForm()
+      })
+    },
+    resetChangeForm() {
+      this.$refs.changeForm.resetFields()
+      this.outerVisible = false
+    },
+    // 打卡修改密码弹窗
+    openChangePass(id) {
+      this.outerVisible = true
+      this.ruleForm.id = id
+    },
+    // 密码校验
+    validatePass(rule, value, callback) {
+      if (value === '') {
+        callback(new Error('请输入密码'))
+      } else {
+        if (this.ruleForm.checkPassword !== '') {
+          this.$refs.changeForm.validateField('checkPassword')
+        }
+        callback()
+      }
+    },
+    // 确认密码校验
+    validatePass2(rule, value, callback) {
+      if (value === '') {
+        callback(new Error('请再次输入密码'))
+      } else if (value !== this.ruleForm.password) {
+        callback(new Error('两次输入密码不一致!'))
+      } else {
+        callback()
+      }
+    },
+    // 重置密码
+    resetPassword(id) {
+      this.$confirm('此操作将重置该员工登录密码, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        await resetPasswordAPI(id)
+        this.$message({
+          type: 'success',
+          message: '密码重置成功!'
+        })
+      })
+    },
     // 删除
     delEmployee(id) {
       this.$confirm('此操作将删除该员工, 是否继续?', '提示', {
@@ -181,7 +283,7 @@ export default {
         employeeClass: '',
         entryTime: '',
         endTime: '',
-        performance: ''
+        performance: '0'
       }
       this.dialogVisible = false
       this.getEmployeeList()
