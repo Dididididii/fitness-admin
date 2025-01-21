@@ -7,7 +7,7 @@
       <el-button type="primary" class="search-btn">查询</el-button>
     </div>
     <!-- 新增删除操作区域 -->
-    <div class="create-container">
+    <div v-if="!superShow" class="create-container">
       <el-button type="primary" @click="clockIn">打卡上班</el-button>
       <el-button @click="clockOut">签退下班</el-button>
     </div>
