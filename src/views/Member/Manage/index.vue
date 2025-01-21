@@ -45,6 +45,7 @@
         </el-table-column>
         <el-table-column label="操作" fixed="right" width="180">
           <template #default="scope">
+            <el-button size="mini" type="text" @click="signIn(scope.row)">签到</el-button>
             <el-button size="mini" type="text" @click="renewCards(scope.row)">续费</el-button>
             <el-button size="mini" type="text" @click="seeMember(scope.row.id)">查看</el-button>
             <el-button size="mini" type="text" @click="editMember(scope.row.id)">编辑</el-button>
@@ -89,6 +90,7 @@
 
 <script>
 import { getMemberListAPI, delMemberAPI, renewMemberAPI, getAllMembersList } from '@/api/member'
+import { memberSignInAPI } from '@/api/clock'
 import { utils, writeFileXLSX } from 'xlsx'
 
 export default {
@@ -188,6 +190,65 @@ export default {
     this.getMemberList()
   },
   methods: {
+    // 计算两个时间之间的时间差 多少天时分秒
+    daysRemaining(startTime, endTime) {
+      const endDate = endTime
+      const startDate = startTime
+
+      const diff = endDate - startDate
+      // console.log(diff)
+
+      return diff > 0 ? Math.floor(diff / (1000 * 60 * 60 * 24)) : 0
+    },
+    // 时间戳转换
+    format(dataString) {
+      // dataString是整数，否则要parseInt转换
+      var time = new Date(dataString)
+      var year = time.getFullYear()
+      var month = time.getMonth() + 1
+      var day = time.getDate()
+      var hour = time.getHours()
+      var minute = time.getMinutes()
+      var second = time.getSeconds()
+      return (
+        year +
+        '-' +
+        (month < 10 ? '0' + month : month) +
+        '-' +
+        (day < 10 ? '0' + day : day) +
+        ' ' +
+        (hour < 10 ? '0' + hour : hour) +
+        ':' +
+        (minute < 10 ? '0' + minute : minute) +
+        ':' +
+        (second < 10 ? '0' + second : second)
+      )
+    },
+    // 签到
+    signIn(row) {
+      const data = row
+      data.time = this.format(new Date().getTime())
+      const startTime = new Date(data.startTime).getTime()
+      const endTime = new Date(data.endTime).getTime()
+      const time = this.daysRemaining(startTime, endTime)
+      data.residue = `${time > 10 ? time : '0' + time}`
+      delete data.startTime
+      delete data.endTime
+      delete data.identityCard
+      delete data.payNum
+      delete data.paymentMethod
+      this.$confirm('此会员是否已到店内?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        await memberSignInAPI(data)
+        this.$message({
+          type: 'success',
+          message: '签到成功!'
+        })
+      })
+    },
     // 导出execl
     async exportToExcel() {
       // 获取要导出的业务数据

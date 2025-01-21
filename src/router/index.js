@@ -36,6 +36,38 @@ export const routes = [
     ],
   },
   {
+    path: "/clock",
+    component: Layout,
+    permission: "clock",
+    meta: { title: "考勤区域", icon: "el-icon-pie-chart" },
+    children: [
+      {
+        path: "signin",
+        permission: "park:signin",
+        meta: { title: "会员签到" },
+        component: () => import("@/views/Clock/SignIn"),
+      },
+      {
+        path: "clockin",
+        permission: "park:clockin",
+        meta: { title: "员工打卡" },
+        component: () => import("@/views/Clock/ClockIn"),
+      },
+      {
+        path: "leave",
+        permission: "park:leave",
+        meta: { title: "申请请假" },
+        component: () => import("@/views/Clock/Leave"),
+      },
+      {
+        path: "overtime",
+        permission: "park:overtime",
+        meta: { title: "申请加班" },
+        component: () => import("@/views/Clock/Overtime"),
+      },
+    ],
+  },
+  {
     path: "/member",
     component: Layout,
     permission: "member",
@@ -55,7 +87,6 @@ export const routes = [
       },
     ],
   },
-
   {
     path: "/employee",
     component: Layout,
